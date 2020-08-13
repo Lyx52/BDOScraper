@@ -1,11 +1,12 @@
 class Database:
     IP = "localhost:27017"
-    User = "User"
+    User = "user"
     Password = "Password"
     DBName = "BDODB"
     RecipeCollection = "RecipeData"
     PriceCollection = "PriceData"
-    UpdateTime = 3600   # Time in seconds
+    UpdateTime = 600   # Time in seconds
+    UpdateDatabases = False
 
 
 class Scraper:
@@ -14,8 +15,8 @@ class Scraper:
     # Needs to be supplied from your own login,
     RequestVerificationToken = ""
     HeaderData = {
-        'Cookie': "",
-        'User-Agent': ""
+        'Cookie': '',
+        'User-Agent': ''
     }
 
 

@@ -1,5 +1,9 @@
 import time, requests
+
+
 from lxml import html
+from simplejson import JSONDecodeError
+
 from Config import Scraper
 from Categories import Categories, SubCategories, Links
 
@@ -17,11 +21,16 @@ def getItemPrice(category_id, sub_category_id):
     }
 
     req = requests.post(url, data=form_data, headers=headers)
-
     if req.status_code != 200:
         print("Request not fulfilled!")
 
-    res_json = req.json()
+    res_json = {}
+    try:
+        res_json = req.json()
+    except JSONDecodeError:
+        print("JSON Data could not be parsed, try to renew RequestVerificationToken and Header data!")
+        quit(1)
+
     item_dict = {}
 
     for item in res_json['marketList']:
@@ -51,15 +60,26 @@ def scrapePrices(minCat=0, maxCat=80):
 
 
 def scrapeRecipes(maxID=200):
-    data = {}
+    recipeData = {}
+    recipeInfo = {}
     for id in range(1, maxID):
         lastTime = time.time()
+
+        # Scrape item recipe
         recipe = getItemRecipe(id)
-        data[list(recipe)[0]] = list(recipe.values())[0]
+        recipeData[min(recipe)] = list(recipe.values())[0]
+        recipeInfo[min(recipe)] = {
+            'disabled': recipe['disabled'],
+            'type': recipe['type']
+        }
+
         time.sleep(Scraper.TimeBetweenRequests % (time.time() - lastTime))
         print(f"Item {list(recipe.keys())[0]} recipe added")
 
-    return data
+    return {
+        'data': recipeData,
+        'info': recipeInfo
+    }
 
 
 def getItemRecipe(recipe_id):
@@ -75,6 +95,12 @@ def getItemRecipe(recipe_id):
 
     # Get name of the craftable item
     name = root.xpath('//span[@id="item_name"]//text()')[0]
+
+    # Test if recipe is declared as "Disabled"
+    recipeDisabled = root.xpath('boolean(//*[contains(text(),"This recipe is disabled in the game!")])')
+
+    # Get crafting type
+    craftType = root.xpath('//span[@class="yellow_text"]//text()')[0]
 
     # Get recipe material names
     materials = list(root.xpath('//tr[5]//a[@data-enchant="0"]/text()'))
@@ -101,5 +127,7 @@ def getItemRecipe(recipe_id):
             material: int(materialCount[materialNames.index(material)])
         })
     return {
-        name: output
+        name: output,
+        "disabled": recipeDisabled,
+        "type": craftType
     }

@@ -21,14 +21,13 @@ def getData(db, collectionName, isPrices=False):
 
     print(
         f"{'Price' * isPrices + 'Recipe' * (not isPrices)} Database was last updated {convertTime(lastUpdateTime)}")
-    if lastUpdateTime > Database.UpdateTime:
+    if lastUpdateTime > Database.UpdateTime and Database.UpdateDatabases:
 
         # Scrape prices or recipes
         if isPrices:
             jsonObject = scrapePrices()
         else:
             jsonObject = scrapeRecipes()
-
         # Drop the old collection
         drop(db, collectionName)
 
@@ -86,10 +85,11 @@ def getRecipePrice(item_name, recipes, prices):
 
         # Add to totalCost of the recipe
         materialCost = materialCost + materialPrice * materialAmount
-
+        materialList.append(material)
     return {
         "materialCost": materialCost,
         "marketPrice": itemCost,
         "marketPriceAfterTax":
-            itemCost * (0.65 + (0.195 * CostCalculator.ValuePack) + (CostCalculator.FamilyFameBonus / 100))
+            itemCost * (0.65 + (0.195 * CostCalculator.ValuePack) + (CostCalculator.FamilyFameBonus / 100)),
+        "materials": materialList
     }
