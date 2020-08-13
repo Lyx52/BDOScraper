@@ -1,11 +1,11 @@
 class Database:
     IP = "localhost:27017"
-    User = "admin"
-    Password = "P@S5W0R4"
+    User = "User"
+    Password = "Password"
     DBName = "BDODB"
     RecipeCollection = "RecipeData"
     PriceCollection = "PriceData"
-    UpdateTime = 600    # 1h
+    UpdateTime = 3600   # Time in seconds
 
 
 class Scraper:

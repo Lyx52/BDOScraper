@@ -2,6 +2,7 @@ from DB import drop, export, make_data_model, getField
 from Config import Database, CostCalculator
 from Scraper import scrapePrices, scrapeRecipes
 from DB import getField
+from Categories import MaterialGroups
 import time
 
 
@@ -40,28 +41,48 @@ def getData(db, collectionName, isPrices=False):
         return getField(db, collectionName, 'data')
 
 
-def getRecipePrice(item_name, recipes, prices):
+def getCheapestInGroup(materialGroup, prices):
+    materialPriceList = list()
+    for material in MaterialGroups[materialGroup]:
+        try:
+            materialPriceList.append((material, prices[material]["minPrice"]))
+        except KeyError:
+            print(f"Item ({material}) not in pricelist")
+    materialPriceList.sort(key=lambda x: x[1])
+    return materialPriceList[0]
 
-    recipe = recipes[item_name]
+
+def getItemPrice(item_name, prices):
+    itemName = item_name  # This gets returned because item_name can also be in a group
     itemCost = 0
-    isFullPrice = True
     try:
         itemCost = prices[item_name]["minPrice"]
     except KeyError:
-        print(f"Item ({item_name}) not in pricelist")
-        pass
+        try:
+            item = getCheapestInGroup("Blood 1", prices)
+            itemCost = item[1]
+            itemName = item[0]
+        except KeyError:
+            print(f"Group and Item ({item_name}) not in pricelist")
+            return item_name, 0
+
+    return itemName, itemCost
+
+
+def getRecipePrice(item_name, recipes, prices):
+    recipe = recipes[item_name]
+    materialList = list()
+
+    item = getItemPrice(item_name, prices)
+    itemCost = item[1]
+
     materialCost = 0
     for material in recipes[item_name]:
-        # Name and amount of materials
-        materialName = list(material.keys())[0]
-        materialAmount = list(material.values())[0]
-        materialPrice = 0
-        try:
-            materialPrice = prices[materialName]["minPrice"]
-        except KeyError:
-            # Some items dont have market price or they
-            print(f"Material ({materialName}) Not in pricelist")
-            isFullPrice = False
+        materialTuple = getItemPrice(min(material.keys()), prices)
+        # Assign values to individual variables
+        materialName = materialTuple[0]
+        materialPrice = materialTuple[1]
+        materialAmount = min(material.values())
 
         # Add to totalCost of the recipe
         materialCost = materialCost + materialPrice * materialAmount
@@ -69,6 +90,6 @@ def getRecipePrice(item_name, recipes, prices):
     return {
         "materialCost": materialCost,
         "marketPrice": itemCost,
-        "marketPriceAfterTax": itemCost * (0.65 + (0.195 * CostCalculator.ValuePack) + (CostCalculator.FamilyFameBonus / 100)),
-        "FullMaterialPrice": isFullPrice
+        "marketPriceAfterTax":
+            itemCost * (0.65 + (0.195 * CostCalculator.ValuePack) + (CostCalculator.FamilyFameBonus / 100))
     }
