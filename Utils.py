@@ -3,24 +3,14 @@ from Config import Database, CostCalculator
 from Scraper import scrapePrices, scrapeRecipes
 from DB import getField
 from Categories import MaterialGroups
-import time
-
-
-def convertTime(seconds):
-    seconds = seconds % (24 * 3600)
-    hour = seconds // 3600
-    seconds %= 3600
-    minutes = seconds // 60
-    seconds %= 60
-
-    return "%d:%02d:%02d" % (hour, minutes, seconds)
+import time, datetime
 
 
 def getData(db, collectionName, isPrices=False):
     lastUpdateTime = time.time() - getField(db, collectionName, 'updated')
 
     print(
-        f"{'Price' * isPrices + 'Recipe' * (not isPrices)} Database was last updated {convertTime(lastUpdateTime)}")
+        f"{'Price' * isPrices + 'Recipe' * (not isPrices)} Database was last updated {datetime.timedelta(seconds=lastUpdateTime)}")
     if lastUpdateTime > Database.UpdateTime and Database.UpdateDatabases:
 
         # Scrape prices or recipes
@@ -28,8 +18,11 @@ def getData(db, collectionName, isPrices=False):
             jsonObject = scrapePrices()
         else:
             jsonObject = scrapeRecipes()
-        # Drop the old collection
-        drop(db, collectionName)
+
+        # Only drop if jsonObject has been successfuly scraped
+        if jsonObject != {}:
+            # Drop the old collection
+            drop(db, collectionName)
 
         # Export recipes
         export(db, make_data_model(jsonObject), collectionName)

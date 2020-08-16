@@ -1,6 +1,6 @@
 class Database:
     IP = "localhost:27017"
-    User = "user"
+    User = "User"
     Password = "Password"
     DBName = "BDODB"
     RecipeCollection = "RecipeData"
@@ -18,7 +18,6 @@ class Scraper:
         'Cookie': '',
         'User-Agent': ''
     }
-
 
 class CostCalculator:
     ValuePack = True
